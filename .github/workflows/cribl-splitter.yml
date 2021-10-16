@@ -13,22 +13,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    
-    - name: Set up JDK 8
-      uses: actions/setup-java@v2
-      with:
-        java-version: '8'
-        distribution: 'adopt'
+      - uses: actions/checkout@v2
+      - name: Set up JDK 8
+        uses: actions/setup-java@v2
+        with:
+          java-version: '8'
+          distribution: 'adopt'
 
-    - name: Run Cribl Tests
-      run: ./mvnw clean test
+      - name: Run Cribl Tests
+        run: ./mvnw clean test
 
-    - name: Archive Artifacts
-    - uses: actions/upload-artifact@v2
-      with:
-        name: test-artifacts
-        path: |
-          inputs/
-          logs/
-          target/surefire-reports/
+      - name: Archive Artifacts
+      - uses: actions/upload-artifact@v2
+        with:
+          name: test-artifacts
+          path: |
+            inputs/
+            logs/
+            target/surefire-reports/
