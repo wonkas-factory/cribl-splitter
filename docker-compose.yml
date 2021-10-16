@@ -1,0 +1,29 @@
+version: '3.2'
+
+services: 
+  target_1:
+    build:
+      context: .
+    environment:
+      - APP=target
+  target_2:
+    build:
+      context: .
+    environment:
+      - APP=target
+    depends_on:
+      - "target_1"
+  splitter:
+    build:
+      context: .
+    environment:
+      - APP=splitter
+    depends_on:
+      - "target_2"
+  agent:
+    build:
+      context: .
+    environment:
+      - APP=agent
+    depends_on:
+      - "splitter"
