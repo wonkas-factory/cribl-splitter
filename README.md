@@ -5,7 +5,7 @@
 Pull down code and run```./mvnw clean test``` 
 
 Folders
-1. ```node``` is the application folder
+1. ```node``` is the node application under test
 2. ```inputs``` contains all the inputs for the test
 3. ```logs``` generated at run time are all the logs from the tests
 4. ```target/surefire-reports/html/index.html``` generated at runtime is the test report
@@ -43,7 +43,7 @@ Automate the following tasks using language of your choice:
   - [x] Test implementation
   - [x] README.md file documenting your approach and complete instructions for test execution outside of the CI environment
 - [x] Integrate the Github repository with one of the publicly available CI/CD services
-  - [x]Such as, but not limited to: GitHub, CircleCI, TravisCI. **Note: "GitHub actions used"**
+  - [x] Such as, but not limited to: GitHub, CircleCI, TravisCI. **Note: "GitHub actions used"**
 - [x] The resulting submission should be a link to the Github repository README.mdwhich contains all necessary information for evaluating the solution
 
 
@@ -102,15 +102,16 @@ These were some of the questions I had that would probably ask the dev and produ
 
 ### Assumptions
 
-The definition of testing for correctness if open for interpretation. Given that the application reads from a file and makes asynchronous calls to a server the context of the problem would be very similar to video streaming
+The definition of testing for correctness if open for interpretation. Given that the application reads from a file and makes asynchronous calls to a server the context of the problem would be very similar to video streaming and assumed here as well.
 
-1.	A certain level of corrupt packets is acceptable. Treating a log line as a simplified packet a line “This is event number (\\d+)” would be considered valid and anything else would be a corrupt packet/log line. The generally accepted packet loss is assumed to be 1-2.5%. In our testing, I will take a conservative rounded number of 3%. Reference https://en.wikipedia.org/wiki/Packet_loss#Acceptable_packet_loss 
-2.	Similar to streaming the order is not guaranteed. The recreation of the order would more be an implementation of an application consuming the target outputs. What is more import is that the despite the order, the absolute content from the agent input to the targets don’t change. This would be checked. If time it would be interesting to try and recreate the order similar to how a video stream buffers with an appropriate buffer size relative to the default 64KB on Nodejs server. 
-3.	The default buffer for Nodejs is by default UTF-8 and Java uses UTF-8 as well. However the Java implementation of the BufferedReader when reading a character is limited to the char primitive type The scope of the log verification would be limited to the values of a Java char primitive type of 65,535 https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html  whereas UTF-8 technically has 1,112,064 valid characters https://en.wikipedia.org/wiki/UTF-8 so the scope would be bound by the Java limitation for verification of the actual characters. 
-4.	Assumed macOS or Unix type system is used because it is known that Windows encodes the line separate differently
-    1.	Unix: ‘\n’
-    1.	Window: ‘\r\n’
+1.	A certain level of corrupt packets is acceptable. Treating a log line as a simplified packet, a line “This is event number (\\d+)” would be considered valid and anything else would be a corrupt packet/log line. The generally accepted packet loss is assumed to be 1-2.5%. In our testing, I will take a conservative rounded number of 3%. Reference https://en.wikipedia.org/wiki/Packet_loss#Acceptable_packet_loss 
+2.	Similar to streaming the order is not guaranteed. The recreation of the order would more be an implementation of an application consuming the target outputs. What is more import is that the despite the order, the absolute content from the agent input to the targets don’t change. This would be checked. If time it would be interesting to try and recreate the order similar to how a video stream buffers with an appropriate buffer size relative to the default 64KB buffer on a Nodejs server. 
+3.	The default buffer for Nodejs is by default UTF-8 and Java uses UTF-8 as well. However the Java implementation of the BufferedReader when reading a character is limited to the char primitive type. The scope of the log verification would be limited to the values of a Java char primitive type of 65,535 https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html  whereas UTF-8 technically has 1,112,064 valid characters https://en.wikipedia.org/wiki/UTF-8 so the scope would be bound by the Java limitation for verification of the actual characters. 
+4.	Assumed macOS or Unix type system is used because it is known that Windows encodes the line separator differently along with the file separators. Due to this Windows OS it out of scope.
+    1.	macOS and Unix: ‘\n’ for new line and '/' in path to files
+    1.	Window: ‘\r\n’ for a new line and '\' in path to files
     1.	https://www.geeksforgeeks.org/system-lineseparator-method-in-java-with-examples/ 
+5.  It is assumed the scope of the testing is for the end to end behavior of the system. Treating the system as a block box and mostly concerned about the inouts and output. Out of scope are any performance related tests like processing large GB/TB files, storage types used, network limitations etc. Also out of scope is functionally testing each application individually, though simple, we are not allowed to change any code and would require mocks that are more typical of tests at a unit level.
 
 ### Test Cases
 
@@ -148,27 +149,29 @@ These are a brainstorming list of test cases. The final tests are located at Spl
   - Node Reference: https://nodejs.org/en/docs/guides/nodejs-docker-webapp/ 
   - Docker Reference: https://docs.docker.com/engine/reference/builder/
   - Application command entry point at end to use arg/env to have only one docker file
-  - Command to test
+  - Command referenc
       - ```docker build --tag cribl-app --build-arg app=target .```
       - ```docker run -d --name cribl-target cribl-app```
 - Docker compose file 
   - Reference: https://docs.docker.com/compose/compose-file/compose-file-v3/
-  - pass in args for app type at build time and always build to copy input file for agent to run
-  - binds for file outputs https://docs.docker.com/storage/bind-mounts/ 
+  - Pass in args for app type at build time and always build to copy input file for agent to run
+  - Volume binds for file outputs https://docs.docker.com/storage/bind-mounts/ 
     - Tried and was a bit inconsistent and prone to errors – like appending to existing events.log and depending when opening the file could have incomplete lines
     - Use the cp commands instead ```docker cp cribl-splitter_target_1_1:/usr/src/app/events.log ./logs/events1.log```
   -	Container logs other than events.log and console output doesn’t seem to be anything else useful in var/log locations https://www.cyberciti.biz/faq/linux-log-files-location-and-how-do-i-view-logs-files/ 
-  - Commands Reference
+  - Command reference
     - ```docker-compose up --build -d```
     - ```docker-compose down```
 
 ### Test Automation Implementation
 
-1.	The file name for the at ‘inputs/’ is named the same as the test method to make references and easier to run all tests
-2.	Copy input test file from ‘inputs/<file>’ to ‘node/agent/inputs/input.json’ before each run. The inputs.json file for the agent was permanently changed to reduce dynamic references
+1.	The file name at ‘inputs/’ is named the same as the test method to make references and easier to run all tests
+2.	Copy input test file from ‘inputs/<test case name file>’ to ‘node/agent/inputs/input.json’ before each run. The inputs.json file for the agent was permanently changed to reduce dynamic references
 3.	TestContainer to start docker compose file in Java - https://www.testcontainers.org/modules/docker_compose/ 
     1.	Otherwise run basic commands https://www.codejava.net/java-se/file-io/execute-operating-system-commands-using-runtime-exec-methods 
 4.	Pull artifacts – event.log and container logs
+    1.  Logs ```docker cp cribl-splitter_target_1_1:/usr/src/app/events.log ./logs/events1.log```
+    1.  Application logs are printed to console and can be capture from the standout console output
 5.	Run tests verification based on specific test. Would want to stream files for processing to be efficient as possible but generally want to check
     1.	Exact content match – hash map
     1.	Log file sizes – file system calls
@@ -190,11 +193,12 @@ These are a brainstorming list of test cases. The final tests are located at Spl
     - inputs/
     - logs/
     - target/surefire-reports
-  - Try the matrix for different OS
+  - Try the matrix for different OS - macOS didn't seem to have docker installed and ran into file path issues on Windows that could be fixed in the future
 
 ### Future Considerations
 
 1.	Efficiently try to recreate the log outputs with appropriate buffer sizes
+1.  Wireshark to listen in on the ports to see in more detail what is happening
 2.	Running tests in parallel
 3.	Additional docker compose configurations
     1.	Two agents
