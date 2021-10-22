@@ -24,6 +24,7 @@ jobs:
         run: ./mvnw clean test
 
       - name: Archive Artifacts
+        if: always()
         uses: actions/upload-artifact@v2
         with:
           name: test-artifacts
