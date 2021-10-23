@@ -119,6 +119,49 @@ public class SplitterTests {
 	}
 
 	/**
+	 * <b>Test case:</b> largeOneMillionEventsRandomnessTest <br>
+	 * 
+	 * <b>Purpose:<b> The purpose of this test is to see how the application behaves
+	 * processing a large number of events a second time. <br>
+	 * 
+	 * <b>Goal:<b> Verify that the contents match similar to
+	 * largeOneMillionEventsTest however the randomness and async behavior results
+	 * in the target files having different content
+	 * 
+	 * @param method
+	 * @throws IOException
+	 * @throws CriblException
+	 */
+	@Test(dependsOnMethods = { "largeOneMillionEventsTest" })
+	public void largeOneMillionEventsRandomnessTest(Method method) throws IOException, CriblException {
+		runApplication(method.getName(), false);
+
+		basicVerification(currentInputLog, currentTargetLogs, "This is event number (\\d+)");
+
+		// Compare target outputs from prior test largeOneMillionEventsTest to confirm
+		// async randomness
+		try {
+			ArrayList<String> temp = new ArrayList<String>();
+			temp.add(0, currentTargetLogs.get(0));
+			VerificationUtil.verifyLogContent("logs/largeOneMillionEventsTest/events1.log", temp);
+			temp.add(0, currentTargetLogs.get(1));
+			VerificationUtil.verifyLogContent("logs/largeOneMillionEventsTest/events2.log", temp);
+			// Fail test if this is reached
+			Assert.assertTrue(false,
+					"The largeOneMillionEventsTest/events1.log and largeOneMillionEventsRandomnessTest/events1.log or "
+							+ "largeOneMillionEventsTest/events2.log and largeOneMillionEventsRandomnessTest/events2.log "
+							+ "match exactly and there is no randomness in the async behavior");
+		} catch (CriblException e) {
+			/**
+			 * When an exception if thrown this means:
+			 * logs/largeOneMillionEventsTest/events1.log does not match
+			 * logs/largeOneMillionEventsRandomnessTest/events1.log or similarly for 2. This
+			 * would confirm the async randomness of target outputs
+			 */
+		}
+	}
+
+	/**
 	 * <b>Test case:</b> emptyLogFileTest <br>
 	 * 
 	 * <b>Purpose:<b> The purpose of this test is to see how the application behaves
